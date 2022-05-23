@@ -38,7 +38,7 @@ class Connection {
                         'client_event_source': null
                     },
                     'presence': {
-                        'status': 'online',
+                        'status': process.env.STATUS,
                         'since': 0,
                         'activities': [],
                         'afk': false
@@ -53,10 +53,26 @@ class Connection {
                     }
                 }
             });
+            if (process.env.CUSTOM_STATUS && process.env.CUSTOM_STATUS.length > 0) {
+                this.send({
+                    'op': 3,
+                    'd': {
+                        'status': process.env.STATUS,
+                        'since': 0,
+                        'activities': [{
+                            'name': 'Custom Status',
+                            'type': 4,
+                            'state': process.env.CUSTOM_STATUS,
+                            'emoji': null
+                        }],
+                        'afk': false
+                    }
+                });
+            }
         });
 
         this.ws.on('close', (code, reason) => {
-            console.log('disconnected:', reason);
+            console.log('disconnected:', reason.toString());
             this.heartbeatRunning = false;
             new Connection(this.token).connect();
         });
