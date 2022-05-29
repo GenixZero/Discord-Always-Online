@@ -9,11 +9,12 @@ class Connection {
         this.heartbeatDelay = 30000;
         this.shouldRun = true;
         this.heartbeatRunning = false;
+        this.connected = false;
     }
 
     async connect() {
         this.ws = new WebSocket('wss://gateway.discord.gg/?encoding=json&v=9');
-
+        this.connected = true;
         this.ws.on('open', () => {
             console.log('connected');
             this.send({
@@ -53,27 +54,17 @@ class Connection {
                     }
                 }
             });
-            if (process.env.CUSTOM_STATUS && process.env.CUSTOM_STATUS.length > 0) {
-                this.send({
-                    'op': 3,
-                    'd': {
-                        'status': process.env.STATUS,
-                        'since': 0,
-                        'activities': [{
-                            'name': 'Custom Status',
-                            'type': 4,
-                            'state': process.env.CUSTOM_STATUS,
-                            'emoji': null
-                        }],
-                        'afk': false
-                    }
-                });
+            this.sendStatus();
+
+            if (process.env.STATUS_UPDATE) {
+                this.statusUpdate();
             }
         });
 
         this.ws.on('close', (code, reason) => {
             console.log('disconnected:', reason.toString());
             this.heartbeatRunning = false;
+            this.connected = false;
             new Connection(this.token).connect();
         });
 
@@ -103,6 +94,46 @@ class Connection {
         }
 
         this.heartbeatRunning = false;
+    }
+
+    statusUpdate() {
+        const con = this;
+        setTimeout(() => {
+            if (con.connected) {
+                this.sendStatus(process.env.STATUS_UPDATE);
+                setTimeout(() => {
+                    if (con.connected) {
+                        this.sendStatus();
+                        this.statusUpdate();
+                    }
+                }, process.env.STATUS_UPDATE_DURATION * 60000);
+            }
+        }, process.env.STATUS_UPDATE_DELAY * 60000);
+    }
+
+    sendStatus(status) {
+        if (!status) {
+            status = process.env.STATUS;
+        }
+        console.log(`Changing status to ${status}`);
+        const obj = {
+            'op': 3,
+            'd': {
+                'status': status,
+                'since': 0,
+                'activities': [],
+                'afk': false
+            }
+        };
+        if (process.env.CUSTOM_STATUS && process.env.CUSTOM_STATUS.length > 0) {
+            obj['d']['activities'].push({
+                'name': 'Custom Status',
+                'type': 4,
+                'state': process.env.CUSTOM_STATUS,
+                'emoji': null
+            });
+        }
+        this.send(obj);
     }
 
     send(data) {
