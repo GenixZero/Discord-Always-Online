@@ -100,7 +100,7 @@ class Connection {
         const con = this;
         setTimeout(() => {
             if (con.connected) {
-                this.sendStatus(process.env.STATUS_UPDATE);
+                this.sendStatus(process.env.STATUS_UPDATE, true);
                 setTimeout(() => {
                     if (con.connected) {
                         this.sendStatus();
