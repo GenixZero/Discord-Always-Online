@@ -111,7 +111,7 @@ class Connection {
         }, process.env.STATUS_UPDATE_DELAY * 60000);
     }
 
-    sendStatus(status) {
+    sendStatus(status, tempStatus) {
         if (!status) {
             status = process.env.STATUS;
         }
@@ -125,7 +125,7 @@ class Connection {
                 'afk': false
             }
         };
-        if (process.env.CUSTOM_STATUS && process.env.CUSTOM_STATUS.length > 0) {
+        if ((!tempStatus || process.env.DISABLE_CUSTOM_STATUS == 'false') && process.env.CUSTOM_STATUS && process.env.CUSTOM_STATUS.length > 0) {
             obj['d']['activities'].push({
                 'name': 'Custom Status',
                 'type': 4,
